@@ -46,12 +46,13 @@ const PokemonList = () => {
         ))}
       </ul>
       <div class="inline-flex ">
-        <button
+        {prevUrl && <button
           className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l'
           onClick={() => handleNavigationClick(prevUrl)}
           disabled={!prevUrl}>
           Prev
         </button>
+        }
         <button
           className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l'
           onClick={() => handleNavigationClick(nextUrl)}
