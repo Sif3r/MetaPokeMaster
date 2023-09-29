@@ -1,67 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import PokemonCard from '../components/PokemonCard';
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import PokemonCard from '../components/PokemonCard'
+import PokemonInfo from '../components/PokemonInfo'
 
 const PokemonList = () => {
-  const [apiUrl, setApiUrl] = useState("https://pokeapi.co/api/v2/pokemon/");
-  const [loading, setLoading] = useState(true);
-  const [pokemonList, setPokemonList] = useState([]);
-  const [prevUrl, setPrevUrl] = useState();
-  const [nextUrl, setNextUrl] = useState();
+  const [pokeData, setPokeData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [url, setUrl] = useState("https://pokeapi.co/api/v2/pokemon/")
+  const [pokeInfo, setPokeInfo] = useState()
+  const [nextUrl, setNextUrl] = useState()
+  const [prevUrl, setPrevUrl] = useState()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(apiUrl);
-        const { results, previous, next } = res.data;
-        setPokemonList(results);
-        setPrevUrl(previous);
-        setNextUrl(next);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching Pokemon data:', error);
-      }
-    };
-
-    fetchData();
-  }, [apiUrl]);
-
-  const handleNavigationClick = (newUrl) => {
-    if (newUrl) {
-      setApiUrl(newUrl);
-    }
-  };
-
-  if (loading) {
-    return <div className="p-4 m-2 bg-gray-200 rounded shadow">Loading...</div>;
+  const fetchPokemon = async () => {
+    const res = await axios.get(url)
+    setNextUrl(res.data.next)
+    setPrevUrl(res.data.previous)
+    await getPokemon(res.data.results)
+    setLoading(false)
   }
 
-  return (
-    <>
-      <ul>
-        {pokemonList.map((pokemon, index) => (
-          <li key={index}>
-            <PokemonCard pokemonUrl={pokemon.url} />
-          </li>
-        ))}
-      </ul>
-      <div class="inline-flex ">
-        {prevUrl && <button
-          className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l'
-          onClick={() => handleNavigationClick(prevUrl)}
-          disabled={!prevUrl}>
-          Prev
-        </button>
-        }
-        <button
-          className='bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l'
-          onClick={() => handleNavigationClick(nextUrl)}
-          disabled={!nextUrl}>
-          Next
-        </button>
-      </div>
-    </>
-  );
-};
+  const getPokemon = async (res) => {
+    const pokemonData = await Promise.all(
+      res.map(async (item) => {
+        const result = await axios.get(item.url)
+        return result.data
+      })
+    )
+    setPokeData(pokemonData);
+  }
 
-export default PokemonList;
+  useEffect(() => {
+    fetchPokemon()
+  }, [url])
+
+  return (
+    <div className="bg-gray-100 min-h-screen flex">
+      <div className="w-1/2 p-4">
+        <PokemonCard
+          pokemon={pokeData}
+          loading={loading}
+          infoPokemon={(poke) => setPokeInfo(poke)}/>
+        <div className="flex justify-between mt-4">
+          <button
+            onClick={() => {
+              setPokeData([])
+              setUrl(prevUrl)
+            }}
+            disabled={!prevUrl}
+            className={`px-4 py-2 rounded-lg ${
+              prevUrl ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-300 cursor-not-allowed'
+            } text-white`}>
+            Previous
+          </button>
+          <button
+            onClick={() => {
+              setPokeData([])
+              setUrl(nextUrl)
+            }}
+            disabled={!nextUrl}
+            className={`px-4 py-2 rounded-lg ${
+              nextUrl ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-300 cursor-not-allowed'
+            } text-white`}>
+            Next
+          </button>
+        </div>
+      </div>
+      <div className="w-1/2 p-4">
+        <PokemonInfo data={pokeInfo} />
+      </div>
+    </div>
+  )
+}
+export default PokemonList

@@ -1,42 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 
-const PokemonCard = ({ pokemonUrl }) => {
-  const [pokemonData, setPokemonData] = useState(null);
+const PokemonCard = ({ pokemon, loading, infoPokemon }) => {
+  const [favorites, setFavorites] = useState(() => {
+    const storedFavorites = localStorage.getItem('pokemonFavorites');
+    return storedFavorites ? JSON.parse(storedFavorites) : [];
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(pokemonUrl);
-        setPokemonData(response.data);
-      } catch (error) {
-        console.error('Error fetching Pokemon data:', error);
-      }
-    };
+  const addToFavorites = (poke) => {
+    if (!favorites.some((favorite) => favorite.id === poke.id)) {
+      const updatedFavorites = [...favorites, poke];
+      setFavorites(updatedFavorites);
+      localStorage.setItem('pokemonFavorites', JSON.stringify(updatedFavorites));
+    }
+  };
 
-    fetchData();
-  }, [pokemonUrl]);
+  const removeFromFavorites = (poke) => {
+    const updatedFavorites = favorites.filter((favorite) => favorite.id !== poke.id);
+    setFavorites(updatedFavorites);
+    localStorage.setItem('pokemonFavorites', JSON.stringify(updatedFavorites));
+  };
 
-  if (!pokemonData) {
-    return <div className="p-4 m-2 bg-gray-200 rounded shadow">Loading...</div>;
+  if (loading) {
+    return <div className="text-center text-gray-600 font-semibold">Loading...</div>;
   }
 
-  const { name, sprites, types } = pokemonData;
-
   return (
-    <div className="p-4 m-2 bg-white rounded shadow-lg">
-      <h2 className="text-xl font-semibold mb-2">{name}</h2>
-      <img src={sprites.front_default} alt={name} className="mx-auto" />
-      <div className="mt-2">
-        <strong className="block mb-1">Types:</strong>
-        <ul>
-          {types.map((type, index) => (
-            <li key={index} className="text-blue-500">
-              {type.type.name}
-            </li>
-          ))}
-        </ul>
-      </div>
+    <div className="pokemon-card grid grid-cols-2 gap-4">
+      {pokemon.map((poke) => (
+        <div key={poke.id} className="pokemon border rounded-lg p-4 hover:bg-gray-100 cursor-pointer">
+          <img
+            src={poke.sprites.front_default}
+            alt={poke.name}
+            onClick={() => infoPokemon(poke)}
+            className="mx-auto w-24 h-24"
+          />
+          <p className="text-center mt-2 text-gray-800 font-semibold">{poke.name}</p>
+          {favorites.some((favorite) => favorite.id === poke.id) ? (
+            <button onClick={() => removeFromFavorites(poke)} className="mt-2 bg-red-500 text-white rounded-full px-4 py-2 hover:bg-red-600 focus:outline-none">
+              Remove from Favorites
+            </button>
+          ) : (
+            <button onClick={() => addToFavorites(poke)} className="mt-2 bg-blue-500 text-white rounded-full px-4 py-2 hover:bg-blue-600 focus:outline-none">
+              Add to Favorites
+            </button>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
